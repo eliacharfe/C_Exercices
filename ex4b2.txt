@@ -1,0 +1,89 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+//-----------------
+#define      MAX_RAND  200000
+#define      MSG_TYPE  1
+#define      TRUE      1
+#define      END       -1
+//---------------------------------------------------
+struct Data {
+	pid_t _id ;
+	int _num ;
+} ;
+struct my_msgbuf {
+	long mtype;
+	struct Data _data ;
+};
+//-----------------------------------------------
+void get_ready(int msqid);
+void main_loop(int msqid, char str[]);
+void exit_error(char *str);
+//---------------------------------------------------
+int main(int argc, char *argv[])
+{
+	if (argc != 2)
+      exit_error("argc");
+
+	int msqid;
+	key_t key;
+	if ((key = ftok(".", '4')) == END)
+		exit_error("ftok2");
+	if ((msqid = msgget(key, 0)) == END)
+		exit_error("msgget2");
+
+	get_ready(msqid); // wait for brothers
+	main_loop(msqid, argv[1]); // send and rcv
+
+	return EXIT_SUCCESS;
+}
+//-------------------------------------
+void get_ready(int msqid)
+{
+	struct my_msgbuf my_msg;
+	my_msg.mtype = MSG_TYPE;
+	my_msg._data._id = getpid();
+	if (msgsnd(msqid, &my_msg, sizeof(struct Data), 0) == END) // send is pid
+		exit_error("msgsnd2");
+	if (msgrcv(msqid, &my_msg,sizeof(struct Data), (int)getpid(), 0)  == END)
+		exit_error("msgrcv2"); // when receive message get started
+}
+//-----------------------------------
+void main_loop(int msqid, char str[])
+{
+	struct my_msgbuf my_msg;
+	int child_send = 0, father_delete = 0;
+	srand(atoi(str));
+	while (my_msg._data._num != END)
+	{
+		my_msg.mtype = MSG_TYPE ;
+		my_msg._data._id = getpid() ;
+		my_msg._data._num = rand() %  MAX_RAND ;
+
+		if (msgsnd(msqid, &my_msg, sizeof(struct Data), 0) == END) //send
+			exit_error("msgsnd2");
+		child_send++;
+
+		if(msgrcv(msqid,&my_msg,sizeof(struct Data),(int)getpid(),0) == END)
+			exit_error("msgrcv2");
+		if (my_msg._data._num == TRUE) //1
+			father_delete++;
+	}
+	printf("%d %d\n", child_send, father_delete);
+}
+//-----------------------------------------------
+void exit_error(char *str)
+{
+	perror(str);
+	exit(EXIT_FAILURE);
+}
+//---------------------------------

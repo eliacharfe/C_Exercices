@@ -1,0 +1,76 @@
+/* ex6a.c
+ *    Socket
+ * =============================================
+ * ==== Written by: Eliachar Feig. ID: 302278338 ===
+ * =============================================
+ * This program create a socket for communicates from sever to clients
+ * and builds array of 1000 and insert to it randomally from 0 to 200000.
+ * Proceess will run until he erase all the array according to the numbers
+ * sent by the clients. each client will run in an infinite loop and will send
+ * to server randomly a number from 0 to 200000, the server get it and send 0
+ * if not found and 1 if found, that's how the client can calculate how many
+ * number he sent that made deletion in the server's array.
+ *  When the array is empty the server exit loop and send to clients process -1
+ *  which tell them to terminate. Server will send -1 to client to tell them
+ *  to terminate program then  terminate then the program
+ *   The client gets in argument 1, 2, or 3 (each child another one) which will
+ *   be the seed, the IP of server process (on which computer he is working on),
+ *   and the PORT that the server is listening to.
+ *
+ *   No input
+ * Output : Server: how many numbers got from children, how many he deleted and
+ *                  how much time took for do the job
+ *          Client: how many number send and how many caused a delete
+ */
+
+./ex6a1 "PORT"
+./ex6a2 1 IP "PORT"
+./ex6a2 2 IP "PORT"
+./ex6a2 3 IP "PORT"
+
+gcc -Wall ex6a1.c -o ex6a1
+gcc -Wall ex6a2.c -o ex6a2
+gcc -Wall ex6a3.c -o ex6a3
+==============================================
+===============================================
+/* ./ex6b
+ * Socket: Common Greatest Divisor + Decomposition
+ * ========================================================
+ * === Written by: Eliachar Feig. id: 302278338 ===
+ * =======================================================
+ * This program run 3 different process that read and write into socket.
+ * ex6b1 and ex6b2 will be 2 different servers, ex6b3 is the client process.
+ * ex6b3: reads from the user in infinite loop a char:
+ *  if the char is 'g':
+ * then ask for 2 integers and send it through socket that reads ex6b1
+ * which calculates the greatest common divisor (gcd) and return the answer.
+ * if the char is 'd':
+ * then ask for an integer from the user and send it to the other socket
+ * to ex6b2 which decompose the number to primes numbers and return the
+ * answer in an array of max size 10.
+ * ex6b1: allocate socket, then in infinte loop reads 2 integers from
+ * client and return the gcd, if get signal SIGINT - free socket.
+ * ex6b2: allocate socket, get an integer from and decompose it to
+ * prime numbers
+ *
+ * All processes when get signal SIGINT free the accurate socket
+ * they works on
+ *
+ * Input: in infinite loop: scan a char:
+ *  if 'g': then get 2 integers
+ *  if 'd': then get 1 integers
+ *
+ *  Output: according to the char:
+ *  if 'g': gcd
+ *  if 'd': decomposition of primes
+ */
+
+./ex6b1 "PORT1"
+./ex6b2 "PORT2"
+./ex6b3 IP1 "PORT1" IP2 "PORT2"
+
+gcc -Wall ex6b1.c -o ex6b1
+gcc -Wall ex6b2.c -o ex6b2
+gcc -Wall ex6b3.c -o ex6b3
+=============================================
+==========================================

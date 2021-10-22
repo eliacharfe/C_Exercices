@@ -1,0 +1,48 @@
+/* ex3a.c
+ * =============================================
+ * ==== Written by: Eliachar Feig. ID: 302278338 ===
+ * =============================================
+ * This program creates 4 pipes for communicates from parent process to sons
+ * proccess. It builds an array of random numbers from 0 to 200000 of size of
+ * 50000, then make born 2 children then in a loop until 1000 and in each
+ * iteration cast a number from 0 to 200000 and send it to both children the
+ * number.  the first child will search linary the number in the array then
+ * send how much time it takes to search. the second child will do the same
+ * thing but will search binary (first thing it will sort the array before the
+ * loop). The children close the standard output then do dup to their pipe
+ * and just do prints the result which the father get in each pipe (according
+ * to the accurate pipe of child). The father et the result of the current time
+ * took for each child and sum it, and save the max time and the minimum time.
+ * when the loop get 1000 it will exit loop and send -1 to the child wich tell
+ * the to terminate their process and the father prints the resultd from each
+ * child the avarge time took the max time and the min time. The terminate prog
+ *
+ * No input
+ * Output : avarage time, max time, mun time of both children
+ *
+    gcc -Wall ex3a.c -o ex3a
+=========================================================================
+/* ex3b.c
+ * =============================================
+ * ==== Written by: Eliachar Feig. ID: 302278338 ===
+ * =============================================
+ * This program creates 4 pipes for communicates from parent process to sons
+ * and builds array of 50000 and insert to it randomally from 0 to 200000.
+ * Proceess will make born 3 children, each child will run in an infinite
+ * loop and will send to father through the parent pipe randomly a number from
+ *  0 to 200000,and send its ID and its pid process the father get that in an
+ *  array. it will search the number in the array it first build and through
+ *  the accurate pipe (each child with it own pipe) if found or not.
+ *  The child will calculate how many numbers he sent and how many caused a
+ *  delation in the father array.
+ *  When the array is empty the father exit loop and send to children a signal
+ *  (SIGTERM) which when they cath it will print their data calculation and
+ *  exit process. Father will terminate then the program
+ *
+ * No input
+ * Output : Father: how many numbers got from children, how many he deleted and
+ * how much time took for do the job
+ * Child: how many number send and how many caused a delete
+ 
+    gcc -Wall ex3b.c -o ex3b
+=======================================================================

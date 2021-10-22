@@ -1,0 +1,111 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+//------------------------------------
+#define      MAX_STR     100
+#define      MSG_TYPE1   1
+#define      SUCCESS     0
+#define      EXIST       1
+#define      FULL        2
+#define      TRUE        1
+#define      FALSE       0
+#define      END        -1
+//---------------------------------------------------
+struct Data {
+	pid_t _id ;
+	int _num , _res_server;
+	char _c;
+	char _mtext[100];
+} ;
+struct my_msgbuf {
+	long mtype;
+	struct Data _data ;
+};
+//---------------------------------------------------
+void do_client(int msqid, int msqid2);
+void exit_error(char *str);
+//---------------------------------------------------
+int end = FALSE ;
+//---------------------------------------------------
+int main(void)
+{
+	int msqid, msqid2;
+	key_t key, key2;
+	if ((key = ftok(".", 'c')) == END || (key2 = ftok(".", 'd')) == END)
+		exit_error("ftok_client");
+	if ((msqid = msgget(key, 0)) == END ||(msqid2 = msgget(key2, 0)) == END) {
+		exit_error("msgget_client");;
+	}
+
+	do_client(msqid, msqid2);
+
+	return EXIT_SUCCESS;
+}
+//-------------------------------------------
+void do_client(int msqid, int msqid2)
+{
+	struct my_msgbuf my_msg;
+	my_msg.mtype = MSG_TYPE1;
+	my_msg._data._id = getpid();
+
+	if(msgsnd(msqid, &my_msg, sizeof(struct Data), 0) == END)
+		exit_error("msgsnd client failed\n");
+	if (msgrcv(msqid, &my_msg, sizeof(struct Data),(int)getpid(), 0) == END)
+	  exit_error("msgrcv_client_failed");
+
+	if (my_msg._data._res_server == SUCCESS)
+		printf("Enter n or s or to start / e to term:\n");
+	else
+		if (my_msg._data._res_server == FULL
+				|| (my_msg._data._res_server == EXIST))
+			exit(EXIT_SUCCESS);
+
+	char c;
+	while (scanf("%c", &c))
+	{
+		my_msg.mtype = MSG_TYPE1;
+		my_msg._data._id = getpid();
+
+		switch(c)
+		{
+		case 'n':
+			scanf("%d", &my_msg._data._num);
+			my_msg._data._c = 'n';  break;
+		case 's':
+			scanf("%s", my_msg._data._mtext);
+			my_msg._data._c = 's'; break;
+		case 'e':
+			my_msg._data._c = 'e';
+			if(msgsnd(msqid, &my_msg, sizeof(struct Data), 0) == END)
+				exit_error("msgsnd_client_failed\n"); // to server
+			exit (EXIT_FAILURE);	break;
+		}
+
+		if(msgsnd(msqid2, &my_msg, sizeof(struct Data), 0) == END)
+			exit_error("msgsnd client failed\n"); // to app
+		if (msgrcv(msqid2, &my_msg, sizeof(struct Data),(int)getpid(), 0) == END)
+			exit_error("msgrcv_client_failed"); // from app
+
+		if (c == 'n')
+			(my_msg._data._num == FALSE) ? printf("not prime\n") :
+					printf("prime\n");
+		else if(c =='s')
+			(my_msg._data._num == FALSE) ? printf("not palindrome\n") :
+					printf("palindrome\n");
+	}
+}
+//------------------------------------------
+void exit_error(char *str)
+{
+	perror(str);
+	exit(EXIT_FAILURE);
+}

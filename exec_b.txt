@@ -1,0 +1,35 @@
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+//---------------------------------------
+
+//------------------------------------------
+int main()
+{
+	pid_t pid;
+	pid = fork();
+
+	char *args[] = {"./exec", "abc", "de",  NULL};
+
+	if (pid)
+	{
+		return EXIT_SUCCESS;
+	}
+	else
+	{
+		printf("son: %d\n ", getpid());
+
+		if (execvp("./exec", args) != 0)
+		{
+			perror("execvp failed...");
+		}
+	}
+
+	return EXIT_SUCCESS;
+}
+//---------------------------------------------------------------
+
+

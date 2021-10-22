@@ -1,0 +1,132 @@
+/* ./ex5b
+ * Shared memory: Common Greatest Divisor + Decomposition
+ * ========================================================
+ * === Written by: Eliachar Feig. id: 302278338 ===
+ * =======================================================
+ * This program run 3 different process that read and write into a common
+ * shared memory.
+ * ex5b3: reads from the user in infinite loop a char:
+ *  if the char is 'g':
+ * then ask for 2 integers and send it through an array that allocates ex5b1
+ * which calculates the greatest common divisor (gcd) and return the answer in
+ * the next cell in the array. in the 5th cell in the array puts it's pid
+ * process for the other process can reconise him and send him a signal SIGUSR1
+ * to tell him that he finish calculation. ex5b3 send SIGUSR1 to cell 0 which
+ * contains pid of ex5b1 to wake up him from his pause. ex5b3 tell the answer
+ * then wait to read new data from user
+ * if the char is 'd':
+ * then ask for an integer from the user and send it to an (other array) that
+ * allocates ex5b2 which decompose the number to primes numbers and return the
+ * answer in the array between cell 2 to 20. in the 21 cell puts its pid.
+ * then signal SIGUSR2 to cell 0 which contains the pid of ex5b2 process to
+ * wake up him to do calculation. ex5b3 tell the answer then wait to read new
+ *  data from user.
+ * ex5b1: put his pid in cell 0, go sleep until gets signal SIGUSR1 and then
+ * do calculation and put the answer in the array that he first allocated,
+ * then send to ex5b3 a signal SIGUSR1 to tell him his done then go sleep
+ * (run in infinite loop as well).
+ * ex5b3: put his pid in cell 0, go sleep until gets signal SIGUSR2 and then
+ * do calculation and put the answer in the array that he first allocated,
+ * then send to ex5b3 a signal SIGUSR1 to tell him his done then go sleep
+ * (run in infinite loop as well).
+ *
+ * All processes when get signal SIGINT free the accurate shared memory
+ * they works on
+ *
+ * Input: in infinite loop: scan a char:
+ *  if 'g': then get 2 integers
+ *  if 'd': then get 1 integers
+ *
+ *  Output: according to the char:
+ *  if 'g': gcd
+ *  if 'd': decomposition of primes
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <signal.h>
+#include <time.h>
+
+#define   ARR_SIZE   5
+#define   TRUE       1
+#define   FALSE      0
+#define   PID1       0
+#define   PID3       4
+#define   ANSWER     3
+#define   END        -1
+//---------------------------------------
+void run_greatest_common_divisor(int arr[], int shm_id1);
+int max_div(int num1, int num2);
+void sig_catch(int status);
+void sig_terminate(int status);
+void release_shm(int shm_id);
+void exit_error(char str[]);
+//---------------------------------
+int end = FALSE;
+//----------------------------------------------------------------------------
+int main()
+{
+	signal(SIGINT, sig_terminate);
+	signal(SIGUSR1, sig_catch);
+	key_t key1 ;
+	int shm_id1 ;
+
+	if ((key1 = ftok(".", 'g')) == END)
+		exit_error("ftok failed") ;
+	if ((shm_id1 = shmget(key1, ARR_SIZE, IPC_CREAT | IPC_EXCL | 0600)) == END)
+		exit_error("shmget failed") ;
+	int *shm_ptr ;
+	if ((shm_ptr = (int*) shmat(shm_id1, NULL, 0))  == (int*) END)
+		exit_error("shmat failed: ") ;
+
+	run_greatest_common_divisor(shm_ptr, shm_id1);
+
+	return EXIT_SUCCESS;
+}
+//---------------------------------------------------------
+void run_greatest_common_divisor(int arr[], int shm_id1)
+{
+	arr[PID1/*0*/] = getpid();
+	while (TRUE)
+	{
+		if(end)
+			release_shm(shm_id1);
+		pause();
+		arr[ANSWER/*3*/] = max_div(arr[1], arr[2]);
+		kill (arr[PID3], SIGUSR1);
+	}
+}
+//--------------------------------
+int max_div(int num1, int num2)
+{
+	int gcd;
+	for(int div = 1; div <= num1 && div <= num2; ++div)
+	{
+		if(num1 % div == 0 && num2 % div == 0)
+			gcd = div;
+	}
+	return gcd;
+}
+//--------------------------------------
+void sig_catch(int status)
+{ ; }
+//-------------------------------------
+void sig_terminate(int status)
+{ end = TRUE; }
+//-------------------------------------
+void release_shm(int shm_id)
+{
+	if (shmctl(shm_id, IPC_RMID, NULL) == END)
+		exit_error("shmctl failed\n") ;
+}
+//--------------------------------------------
+void exit_error(char str[])
+{
+	perror(str);
+	exit (EXIT_FAILURE);
+}
+

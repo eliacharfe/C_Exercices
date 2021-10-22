@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <signal.h>
+#include <time.h>
+
+#define   ARR_SIZE   5
+#define   ARR_SIZE2  22
+#define   TRUE       1
+#define   FALSE      0
+#define   PID1       0
+#define   PID2       0
+#define   PID3_1     4
+#define   PID3_2     21
+#define   END        -1
+//---------------------------------------
+void run_front_end(int arr[],  int arr2[],int shm_id1, int shm_id2);
+void sig_catch(int status);
+void sig_terminate(int status);
+void release_shm(int shm_id, int shm_id2);
+void exit_error(char str[]);
+//----------------------------------------------------
+int end = FALSE;
+//----------------------------------------------------------------------------
+int main()
+{
+	signal(SIGINT, sig_terminate);
+	signal(SIGUSR1, sig_catch);
+	signal(SIGUSR2, sig_catch);
+	key_t key1 , key2;
+	int shm_id1, shm_id2 ;
+	if ((key1 = ftok(".", 'g'))  == END)
+		exit_error("ftok failed") ;
+	if ((shm_id1 = shmget(key1, ARR_SIZE, 0600)) == END)
+		exit_error("shmget failed") ;
+	int *shm_ptr = (int*) shmat(shm_id1, NULL, 0) ;
+	if (shm_ptr == (int*) END)
+		exit_error("shmat failed: ") ;
+
+	if ((key2 = ftok(".", 'd'))  == END)
+			exit_error("ftok2 failed") ;
+		if ((shm_id2 = shmget(key2, ARR_SIZE2, 0600)) == END)
+			exit_error("shmget2 failed") ;
+		int *shm_ptr2 = (int*) shmat(shm_id2, NULL, 0) ;
+		if (shm_ptr2 == (int*) END)
+			exit_error("shmat2 failed: ") ;
+
+	run_front_end(shm_ptr,shm_ptr2, shm_id1, shm_id2);
+
+	return EXIT_SUCCESS;
+}
+//---------------------------------------------
+void run_front_end(int arr[], int arr2[], int shm_id1, int shm_id2)
+{
+	int num, num2;
+	char c;
+	printf("Enter g or d: ");
+	while (scanf("%c", &c))
+	{
+		switch(c)
+		{
+		case 'g':
+			scanf("%d %d", &num, &num2);
+			arr[1] = num;
+			arr[2] = num2;
+			arr[PID3_1 /*4*/] = getpid();
+			kill(arr[PID1 /*0*/], SIGUSR1);
+			if(end)
+				release_shm(shm_id1, shm_id2);
+			pause();
+			printf("%d\n", arr[3]);
+			break;
+		case 'd':
+			scanf ("%d" , &num);
+			arr2[1] = num;
+			arr2[PID3_2 /*21*/] = getpid();
+			kill(arr2[PID2 /*0*/], SIGUSR2);
+			if(end)
+				release_shm(shm_id1, shm_id2);
+			pause();
+			for(int i = 2 ; arr2[i] != 0; i++)
+			{
+				printf("%d\n", arr2[i]);
+				arr2[i] = 0; // reset to zero
+			}
+			break;
+		}
+	}
+}
+//--------------------------------------
+void sig_catch(int status)
+{ ; }
+//-------------------------------------
+void sig_terminate(int status)
+{ end = TRUE; }
+//-----------------------------------------
+void release_shm(int shm_id, int shm_id2)
+{ // free
+	if (shmctl(shm_id, IPC_RMID, NULL) == END)
+		exit_error("shmctl failed\n") ;
+	if (shmctl(shm_id2, IPC_RMID, NULL) == END)
+		exit_error("shmctl failed\n") ;
+}
+//--------------------------------------------
+void exit_error(char str[])
+{
+	perror(str);
+	exit (EXIT_FAILURE);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

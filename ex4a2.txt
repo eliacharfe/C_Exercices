@@ -1,0 +1,61 @@
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <string.h>
+#include <string.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdbool.h>
+#include <time.h>
+//--------------------------------------
+#define      MAX_RAND  200000
+#define      TRUE      1
+#define      FALSE     0
+#define      END       -1
+//-------------------PROTOTYPES ------------------
+void main_loop(FILE* fdw, FILE* fdr, char str[]);
+//-------------------------------------
+int main( int argc, char *argv[])
+{
+	FILE *fdw= fopen(argv[1], "w") ;
+	char fifo[] = "fifoX";
+	char c = argv[2][0];
+	fifo[4] = c;
+	FILE * fdr = fopen(fifo, "r") ;
+	if (!fdw || !fdr) {
+		perror("2 cannot open my_fifo pipe r/w \n ") ;
+		exit(EXIT_FAILURE) ;
+	}
+
+	fprintf(fdw, "%d\n", atoi(argv[2])); // sign father curr process ready
+	int got;
+	fscanf(fdr, "%d", &got); // get strated
+
+	main_loop(fdw, fdr, argv[2]);
+	//close(fdw) ;
+	//close (fdr);
+	return EXIT_SUCCESS;
+}
+//----------------------------------------------------
+void main_loop(FILE* fdw, FILE* fdr, char str[])
+{
+    int child_send = 0, father_delete = 0, found;
+	while (found != END)
+	{
+		int num_rand = rand() % MAX_RAND;
+		fprintf(fdw, "%d\n %d\n", num_rand, atoi(str)) ; // child write
+		fflush(fdw);
+
+		child_send++;
+
+		fscanf(fdr, "%d", &found); // child read
+
+		if (found == TRUE)
+			father_delete++;
+	}
+	printf ("%d %d\n ", child_send, father_delete);
+}
