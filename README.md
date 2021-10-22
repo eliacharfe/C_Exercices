@@ -1,2 +1,2 @@
 # C_Exercices
-some C projects
+some C projects. 
